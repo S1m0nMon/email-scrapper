@@ -147,22 +147,22 @@
                 {% if view == 'intro' %}
                 <!-- Intro / Reasoning Page -->
                 <div class="toss-card text-center">
-                    <div class="toss-title">메일에서 정보를 더 똑똑하게</div>
-                    <p class="toss-subtitle">Gmail Scanner가 영수증과 승인 내역을 자동으로 찾아드릴게요.</p>
+                    <div class="toss-title">이메일에서 필요한 내용을 찾아볼까요?</div>
+                    <p class="toss-subtitle">HireVisa가 입력하신 정보를 기반으로 대신 찾아볼게요</p>
 
                     <div class="text-start px-md-5 mb-5">
                         <div class="intro-feature">
                             <div class="intro-icon"><i class="bi bi-shield-check"></i></div>
                             <div>
-                                <div class="fw-bold">안전한 데이터 관리</div>
-                                <div class="text-muted">구글 보안 규정을 준수하며, 오직 메일 읽기 권한만 사용합니다.</div>
+                                <div class="fw-bold">구글의 보안 규정을 준수해요</div>
+                                <div class="text-muted">읽어온 정보는 어디에도 저장되지 않아요.</div>
                             </div>
                         </div>
                         <div class="intro-feature">
                             <div class="intro-icon"><i class="bi bi-search"></i></div>
                             <div>
-                                <div class="fw-bold">스마트 검색</div>
-                                <div class="text-muted">사용자가 설정한 키워드와 기간으로 필요한 메일만 골라냅니다.</div>
+                                <div class="fw-bold">키워드로 검색해요</div>
+                                <div class="text-muted">키워드를 입력해 주시면 빠르게 찾아볼게요.</div>
                             </div>
                         </div>
                     </div>
@@ -170,13 +170,13 @@
                     <form action="/login" method="get">
                         <div class="row g-3 mb-4 text-start">
                             <div class="col-md-7">
-                                <label class="form-label fw-bold small text-muted">검색할 단어</label>
+                                <label class="form-label fw-bold small text-muted">어떤 키워드로 검색할까요?</label>
                                 <input type="text" name="keyword"
                                     class="form-control form-control-lg bg-light border-0 px-4 rounded-3"
-                                    placeholder="예: 승인, 영수증" value="승인">
+                                    placeholder="예: 승인, 영수증" value="키워드">
                             </div>
                             <div class="col-md-5">
-                                <label class="form-label fw-bold small text-muted">조회 기간</label>
+                                <label class="form-label fw-bold small text-muted">어떤 기간의 메일을 찾을까요?</label>
                                 <select name="days" class="form-select form-select-lg bg-light border-0 px-4 rounded-3">
                                     <option value="7">최근 1주일</option>
                                     <option value="30">최근 1개월</option>
@@ -184,7 +184,7 @@
                                 </select>
                             </div>
                         </div>
-                        <button type="submit" class="btn btn-toss-primary w-100 py-3 fs-5">Google 계정으로 계속하기</button>
+                        <button type="submit" class="btn btn-toss-primary w-100 py-3 fs-5">내 계정으로 검색하기</button>
                     </form>
                 </div>
                 {% endif %}
