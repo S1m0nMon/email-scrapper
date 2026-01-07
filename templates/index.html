@@ -10,7 +10,7 @@
 <body class="bg-light">
     <div class="container py-5">
         <div class="row justify-content-center">
-            <div class="col-md-8">
+            <div class="col-md-10">
                 <div class="text-center mb-5">
                     <h1 class="display-4 fw-bold text-primary mb-3">📧 Email Scraper</h1>
                     <p class="lead text-secondary">간편하게 이메일 정보를 추출하고 관리하세요.</p>
@@ -55,7 +55,8 @@
                                     <tr>
                                         <th class="ps-4">날짜</th>
                                         <th>제목 및 내용</th>
-                                        <th class="pe-4 text-end">추출 정보</th>
+                                        <th>추출 정보</th>
+                                        <th class="pe-4 text-end">작업</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -68,12 +69,29 @@
                                             <div class="fw-bold text-dark">{{ item.subject }}</div>
                                             <div class="text-muted small text-truncate" style="max-width: 300px;">{{
                                                 item.snippet }}</div>
+                                            {% if item.has_attachments %}
+                                            <span class="badge bg-light text-secondary border mt-1">
+                                                <i class="bi bi-paperclip"></i> 첨부파일 있음
+                                            </span>
+                                            {% endif %}
                                         </td>
-                                        <td class="pe-4 align-middle text-end">
+                                        <td class="align-middle">
                                             <span class="badge bg-soft-info text-info p-2 px-3 rounded-pill"
                                                 style="background-color: #e0f2fe; color: #0369a1;">
                                                 {{ item.extracted_price }}
                                             </span>
+                                        </td>
+                                        <td class="pe-4 align-middle text-end">
+                                            <div class="btn-group shadow-sm">
+                                                <button type="button" class="btn btn-white btn-sm border"
+                                                    onclick="viewDetail('{{ item.id }}', '{{ item.subject }}')">
+                                                    <i class="bi bi-eye"></i> 보기
+                                                </button>
+                                                <a href="https://mail.google.com/mail/u/0/#inbox/{{ item.threadId }}"
+                                                    target="_blank" class="btn btn-white btn-sm border">
+                                                    <i class="bi bi-box-arrow-up-right"></i> Gmail
+                                                </a>
+                                            </div>
                                         </td>
                                     </tr>
                                     {% endfor %}
@@ -92,8 +110,77 @@
         </div>
     </div>
 
-    <!-- Bootstrap Icons -->
+    <!-- 이메일 상세 보기 모달 -->
+    <div class="modal fade" id="detailModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-xl modal-dialog-centered">
+            <div class="modal-content border-0 shadow-lg rounded-4">
+                <div class="modal-header border-0 pb-0">
+                    <h5 class="modal-title fw-bold" id="detailTitle">이메일 상세보기</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <div id="attachmentList" class="mb-4"></div>
+                    <div id="messageBody" class="p-3 bg-light rounded-3 overflow-auto" style="max-height: 60vh;">
+                        <div class="text-center py-5" id="loader">
+                            <div class="spinner-border text-primary" role="status"></div>
+                            <p class="mt-2 text-muted">내용을 불러오고 있습니다...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+
+    <script>
+        const detailModal = new bootstrap.Modal(document.getElementById('detailModal'));
+
+        async function viewDetail(msgId, subject) {
+            document.getElementById('detailTitle').textContent = subject;
+            document.getElementById('messageBody').innerHTML = '<div class="text-center py-5"><div class="spinner-border text-primary"></div><p class="mt-2 text-muted">내용을 불러오고 있습니다...</p></div>';
+            document.getElementById('attachmentList').innerHTML = '';
+            detailModal.show();
+
+            try {
+                const response = await fetch(`/message/${msgId}`);
+                const data = await response.json();
+
+                // 첨부파일 렌더링
+                if (data.attachments && data.attachments.length > 0) {
+                    let attachHtml = '<h6 class="fw-bold mb-2">📎 첨부파일</h6><div class="d-flex flex-wrap gap-2">';
+                    data.attachments.forEach(att => {
+                        attachHtml += `
+                            <a href="/attachment/${msgId}/${att.id}/${encodeURIComponent(att.filename)}" 
+                               class="btn btn-outline-secondary btn-sm rounded-pill px-3">
+                               <i class="bi bi-download"></i> ${att.filename} (${(att.size / 1024).toFixed(1)} KB)
+                            </a>`;
+                    });
+                    attachHtml += '</div>';
+                    document.getElementById('attachmentList').innerHTML = attachHtml;
+                }
+
+                // 본문 렌더링
+                if (data.html) {
+                    const iframe = document.createElement('iframe');
+                    iframe.style.width = '100%';
+                    iframe.style.height = '600px';
+                    iframe.style.border = 'none';
+                    document.getElementById('messageBody').innerHTML = '';
+                    document.getElementById('messageBody').appendChild(iframe);
+                    iframe.contentWindow.document.open();
+                    iframe.contentWindow.document.write(data.html);
+                    iframe.contentWindow.document.close();
+                } else {
+                    document.getElementById('messageBody').innerHTML = `<pre class="mb-0" style="white-space: pre-wrap;">${data.text || '내용이 없습니다.'}</pre>`;
+                }
+            } catch (error) {
+                document.getElementById('messageBody').innerHTML = '<p class="text-danger">내용을 불러오는 중 오류가 발생했습니다.</p>';
+            }
+        }
+    </script>
 
     <style>
         .transition-all {
@@ -111,6 +198,15 @@
 
         .rounded-4 {
             border-radius: 1rem !important;
+        }
+
+        .btn-white {
+            background: white;
+        }
+
+        pre {
+            font-family: inherit;
+            font-size: 0.9rem;
         }
     </style>
 </body>
