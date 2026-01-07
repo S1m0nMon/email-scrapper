@@ -1,5 +1,4 @@
 # 구글 인증 관련 보안 파일
-client_secret.json
 token.json
 
 # 파이썬 가상환경 및 캐시
