@@ -125,39 +125,48 @@ def callback():
 
 @app.route('/message/<msg_id>')
 def get_message_detail(msg_id):
-    creds = get_credentials()
-    if not creds:
-        return abort(401)
-    
-    service = build('gmail', 'v1', credentials=creds)
-    msg = service.users().messages().get(userId='me', id=msg_id).execute()
-    
-    html, text = get_message_content(msg['payload'])
-    attachments = get_attachments_metadata(msg['payload'])
-    
-    return {
-        "html": html,
-        "text": text,
-        "attachments": attachments
-    }
+    try:
+        creds = get_credentials()
+        if not creds:
+            print("Error: No credentials found in session")
+            return {"error": "로그인 세션이 만료되었습니다. 다시 로그인해주세요."}, 401
+        
+        service = build('gmail', 'v1', credentials=creds)
+        msg = service.users().messages().get(userId='me', id=msg_id).execute()
+        
+        html, text = get_message_content(msg['payload'])
+        attachments = get_attachments_metadata(msg['payload'])
+        
+        return {
+            "html": html,
+            "text": text,
+            "attachments": attachments
+        }
+    except Exception as e:
+        print(f"Error fetching message {msg_id}: {str(e)}")
+        return {"error": f"메시지를 불러오는 중 오류가 발생했습니다: {str(e)}"}, 500
 
 @app.route('/attachment/<msg_id>/<attachment_id>/<filename>')
 def download_attachment(msg_id, attachment_id, filename):
-    creds = get_credentials()
-    if not creds:
-        return abort(401)
-    
-    service = build('gmail', 'v1', credentials=creds)
-    attachment = service.users().messages().attachments().get(
-        userId='me', messageId=msg_id, id=attachment_id
-    ).execute()
-    
-    file_data = base64.urlsafe_b64decode(attachment['data'])
-    return send_file(
-        io.BytesIO(file_data),
-        download_name=filename,
-        as_attachment=True
-    )
+    try:
+        creds = get_credentials()
+        if not creds:
+            return abort(401)
+        
+        service = build('gmail', 'v1', credentials=creds)
+        attachment = service.users().messages().attachments().get(
+            userId='me', messageId=msg_id, id=attachment_id
+        ).execute()
+        
+        file_data = base64.urlsafe_b64decode(attachment['data'])
+        return send_file(
+            io.BytesIO(file_data),
+            download_name=filename,
+            as_attachment=True
+        )
+    except Exception as e:
+        print(f"Error downloading attachment {attachment_id}: {str(e)}")
+        return {"error": f"첨부파일 다운로드 중 오류가 발생했습니다: {str(e)}"}, 500
 
 def scrape_now(creds, keyword, days):
     service = build('gmail', 'v1', credentials=creds)

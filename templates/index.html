@@ -148,6 +148,10 @@
                 const response = await fetch(`/message/${msgId}`);
                 const data = await response.json();
 
+                if (!response.ok) {
+                    throw new Error(data.error || '알 수 없는 오류가 발생했습니다.');
+                }
+
                 // 첨부파일 렌더링
                 if (data.attachments && data.attachments.length > 0) {
                     let attachHtml = '<h6 class="fw-bold mb-2">📎 첨부파일</h6><div class="d-flex flex-wrap gap-2">';
@@ -177,7 +181,7 @@
                     document.getElementById('messageBody').innerHTML = `<pre class="mb-0" style="white-space: pre-wrap;">${data.text || '내용이 없습니다.'}</pre>`;
                 }
             } catch (error) {
-                document.getElementById('messageBody').innerHTML = '<p class="text-danger">내용을 불러오는 중 오류가 발생했습니다.</p>';
+                document.getElementById('messageBody').innerHTML = `<p class="text-danger">오류 발생: ${error.message}</p>`;
             }
         }
     </script>
