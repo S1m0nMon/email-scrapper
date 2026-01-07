@@ -23,12 +23,23 @@ def get_google_config():
         return None
     return json.loads(raw_config)
 
+from google.auth.transport.requests import Request
+
 def get_credentials():
-    """세션에 저장된 토큰에서 Credentials 객체를 생성합니다."""
     token_info = session.get('token')
     if not token_info:
         return None
-    return Credentials.from_authorized_user_info(token_info, SCOPES)
+    
+    creds = Credentials.from_authorized_user_info(token_info, SCOPES)
+    
+    # 토큰이 만료되었다면 갱신 시도
+    if creds and creds.expired and creds.refresh_token:
+        creds.refresh(Request())
+        # 업데이트된 토큰 정보를 다시 세션에 저장
+        session['token']['token'] = creds.token
+        session.modified = True 
+        
+    return creds
 
 def get_message_content(payload):
     """메일 본문(HTML 우선, 없으면 Text) 추출 헬퍼 함수"""
@@ -156,22 +167,35 @@ def download_attachment(msg_id, attachment_id, filename):
     try:
         creds = get_credentials()
         if not creds:
-            return abort(401)
+            return "로그인이 필요합니다.", 401
         
         service = build('gmail', 'v1', credentials=creds)
+        
+        # 1. 첨부파일 데이터 가져오기
         attachment = service.users().messages().attachments().get(
             userId='me', messageId=msg_id, id=attachment_id
         ).execute()
         
-        file_data = base64.urlsafe_b64decode(attachment['data'])
+        if 'data' not in attachment:
+            return "파일 데이터를 찾을 수 없습니다.", 404
+
+        # 2. Base64 디코딩
+        file_data = base64.urlsafe_b64decode(attachment['data'].encode('UTF-8'))
+        
+        # [참고] Vercel 무료 플랜은 응답 크기가 약 4.5MB로 제한됩니다.
+        if len(file_data) > 4 * 1024 * 1024:
+            return "Vercel 제한으로 인해 4MB 이상의 파일은 다운로드할 수 없습니다.", 413
+
         return send_file(
             io.BytesIO(file_data),
             download_name=filename,
-            as_attachment=True
+            as_attachment=True,
+            mimetype='application/octet-stream'
         )
     except Exception as e:
-        print(f"Error downloading attachment {attachment_id}: {str(e)}")
-        return {"error": f"첨부파일 다운로드 중 오류가 발생했습니다: {str(e)}"}, 500
+        # 에러 발생 시 Vercel Logs에 기록
+        print(f"!!! Attachment Error: {str(e)}")
+        return f"서버 에러: {str(e)}", 500
 
 def scrape_now(creds, keyword, days):
     service = build('gmail', 'v1', credentials=creds)
