@@ -1,0 +1,16 @@
+# 구글 인증 관련 보안 파일
+client_secret.json
+token.json
+
+# 파이썬 가상환경 및 캐시
+venv/
+__pycache__/
+*.pyc
+
+# 운영체제 생성 파일
+.DS_Store
+Thumbs.db
+
+# Vercel 설정 및 환경변수
+.vercel
+.env
