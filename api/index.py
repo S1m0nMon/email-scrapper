@@ -45,6 +45,10 @@ def login():
     if not client_config:
         return "에러: GOOGLE_CREDENTIALS 환경 변수가 설정되지 않았습니다.", 500
 
+    # 검색 파라미터를 세션에 저장
+    session['keyword'] = request.args.get('keyword', '승인')
+    session['days'] = request.args.get('days', '90')
+
     # 파일 대신 client_config(딕셔너리)를 사용합니다.
     flow = Flow.from_client_config(client_config, scopes=SCOPES)
     
@@ -61,18 +65,21 @@ def login():
 @app.route('/callback')
 def callback():
     state = session.get('state')
+    keyword = session.get('keyword', '승인')
+    days = int(session.get('days', '90'))
+    
     client_config = get_google_config()
     flow = Flow.from_client_config(client_config, scopes=SCOPES, state=state)
     flow.redirect_uri = url_for('callback', _external=True, _scheme='https')
     
     flow.fetch_token(authorization_response=request.url)
-    results = scrape_now(flow.credentials)
+    results = scrape_now(flow.credentials, keyword, days)
     return render_template('index.html', data=results, status='success')
 
-def scrape_now(creds):
+def scrape_now(creds, keyword, days):
     service = build('gmail', 'v1', credentials=creds)
-    three_months_ago = (datetime.now() - timedelta(days=90)).strftime('%Y/%m/%d')
-    query = f"after:{three_months_ago} 승인"
+    start_date = (datetime.now() - timedelta(days=days)).strftime('%Y/%m/%d')
+    query = f"after:{start_date} {keyword}"
     
     results = service.users().messages().list(userId='me', q=query, maxResults=10).execute()
     messages = results.get('messages', [])
