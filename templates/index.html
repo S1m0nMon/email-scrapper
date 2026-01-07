@@ -3,216 +3,112 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>승인 메일 추적기</title>
+    <title>Gmail 스캐너 Pro</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .msg-content {
+            max-height: 500px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            padding: 15px;
+            background: white;
+        }
+    </style>
 </head>
 
 <body class="bg-light">
     <div class="container py-5">
-        <div class="row justify-content-center">
-            <div class="col-md-10">
-                <div class="text-center mb-5">
-                    <h1 class="display-4 fw-bold text-primary mb-3">📧 Email Scraper</h1>
-                    <p class="lead text-secondary">간편하게 이메일 정보를 추출하고 관리하세요.</p>
-                </div>
+        <h1 class="mb-4">📧 메일 상세 스캐너</h1>
 
-                <!-- 검색 설정 카드 -->
-                <div class="card border-0 shadow-sm mb-5 p-4 rounded-4">
-                    <form action="/login" method="GET">
-                        <div class="row g-3">
-                            <div class="col-md-6">
-                                <label for="keyword" class="form-label fw-semibold">검색 키워드</label>
-                                <input type="text" class="form-control form-control-lg bg-light border-0" id="keyword"
-                                    name="keyword" placeholder="예: 승인, 결제" value="승인">
-                            </div>
-                            <div class="col-md-6">
-                                <label for="days" class="form-label fw-semibold">검색 기간 (일)</label>
-                                <input type="number" class="form-control form-control-lg bg-light border-0" id="days"
-                                    name="days" placeholder="예: 30, 90" value="30">
-                            </div>
-                            <div class="col-12 mt-4">
-                                <button type="submit"
-                                    class="btn btn-primary btn-lg w-100 py-3 rounded-3 shadow-sm transition-all">
-                                    <i class="bi bi-google me-2"></i> Google 계정 연동 및 검색 시작
-                                </button>
-                            </div>
-                        </div>
-                    </form>
-                </div>
-
-                {% if data %}
-                <div class="card border-0 shadow-lg rounded-4 overflow-hidden">
-                    <div class="card-header bg-primary text-white py-3 px-4 border-0">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <h5 class="mb-0">검색 결과</h5>
-                            <span class="badge bg-white text-primary rounded-pill">{{ data|length }}개의 메일 발견</span>
-                        </div>
+        <div class="card mb-4">
+            <div class="card-body">
+                <form action="/login" method="get" class="row g-3">
+                    <div class="col-md-5">
+                        <input type="text" name="keyword" class="form-control" placeholder="검색 키워드 (예: 승인, 결제)">
                     </div>
-                    <div class="card-body p-0">
-                        <div class="table-responsive">
-                            <table class="table table-hover mb-0">
-                                <thead class="table-light">
-                                    <tr>
-                                        <th class="ps-4">날짜</th>
-                                        <th>제목 및 내용</th>
-                                        <th>추출 정보</th>
-                                        <th class="pe-4 text-end">작업</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {% for item in data %}
-                                    <tr>
-                                        <td class="ps-4 align-middle">
-                                            <span class="text-muted small">{{ item.date }}</span>
-                                        </td>
-                                        <td class="align-middle">
-                                            <div class="fw-bold text-dark">{{ item.subject }}</div>
-                                            <div class="text-muted small text-truncate" style="max-width: 300px;">{{
-                                                item.snippet }}</div>
-                                            {% if item.has_attachments %}
-                                            <span class="badge bg-light text-secondary border mt-1">
-                                                <i class="bi bi-paperclip"></i> 첨부파일 있음
-                                            </span>
-                                            {% endif %}
-                                        </td>
-                                        <td class="align-middle">
-                                            <span class="badge bg-soft-info text-info p-2 px-3 rounded-pill"
-                                                style="background-color: #e0f2fe; color: #0369a1;">
-                                                {{ item.extracted_price }}
-                                            </span>
-                                        </td>
-                                        <td class="pe-4 align-middle text-end">
-                                            <div class="btn-group shadow-sm">
-                                                <button type="button" class="btn btn-white btn-sm border"
-                                                    onclick="viewDetail('{{ item.id }}', '{{ item.subject }}')">
-                                                    <i class="bi bi-eye"></i> 보기
-                                                </button>
-                                                <a href="https://mail.google.com/mail/u/0/#inbox/{{ item.threadId }}"
-                                                    target="_blank" class="btn btn-white btn-sm border">
-                                                    <i class="bi bi-box-arrow-up-right"></i> Gmail
-                                                </a>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
-                        </div>
+                    <div class="col-md-3">
+                        <select name="days" class="form-select">
+                            <option value="7">최근 1주</option>
+                            <option value="30">최근 1달</option>
+                            <option value="90" selected>최근 3달</option>
+                        </select>
                     </div>
-                </div>
-                {% elif status == 'success' %}
-                <div class="alert alert-info border-0 shadow-sm rounded-4 p-4 text-center">
-                    <i class="bi bi-info-circle fs-3 d-block mb-3"></i>
-                    조건에 맞는 메일이 없습니다. 다른 키워드나 기간을 설정해 보세요.
-                </div>
-                {% endif %}
+                    <div class="col-md-4">
+                        <button type="submit" class="btn btn-primary w-100">계정 연동 및 검색</button>
+                    </div>
+                </form>
             </div>
         </div>
+
+        {% if data %}
+        <div class="list-group shadow-sm">
+            {% for item in data %}
+            <div class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                <div onclick="viewMessage('{{ item.id }}')" style="cursor:pointer; flex-grow: 1;">
+                    <div class="d-flex w-100 justify-content-between">
+                        <h5 class="mb-1">{{ item.subject }}</h5>
+                        <small>{{ item.date }}</small>
+                    </div>
+                    <p class="mb-1 text-muted">{{ item.snippet }}</p>
+                    <small class="badge bg-info text-dark">{{ item.extracted_price }}</small>
+                    {% if item.has_attachments %}
+                    <span class="badge bg-warning text-dark">📎 첨부파일 있음</span>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
     </div>
 
-    <!-- 이메일 상세 보기 모달 -->
-    <div class="modal fade" id="detailModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-xl modal-dialog-centered">
-            <div class="modal-content border-0 shadow-lg rounded-4">
-                <div class="modal-header border-0 pb-0">
-                    <h5 class="modal-title fw-bold" id="detailTitle">이메일 상세보기</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+    <div class="modal fade" id="msgModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">메일 상세 보기</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
-                <div class="modal-body p-4">
-                    <div id="attachmentList" class="mb-4"></div>
-                    <div id="messageBody" class="p-3 bg-light rounded-3 overflow-auto" style="max-height: 60vh;">
-                        <div class="text-center py-5" id="loader">
-                            <div class="spinner-border text-primary" role="status"></div>
-                            <p class="mt-2 text-muted">내용을 불러오고 있습니다...</p>
-                        </div>
-                    </div>
+                <div class="modal-body">
+                    <div id="attachmentsArea" class="mb-3"></div>
+                    <div id="mailBody" class="msg-content"></div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
-
     <script>
-        const detailModal = new bootstrap.Modal(document.getElementById('detailModal'));
+        const modal = new Bootstrap.Modal(document.getElementById('msgModal'));
 
-        async function viewDetail(msgId, subject) {
-            document.getElementById('detailTitle').textContent = subject;
-            document.getElementById('messageBody').innerHTML = '<div class="text-center py-5"><div class="spinner-border text-primary"></div><p class="mt-2 text-muted">내용을 불러오고 있습니다...</p></div>';
-            document.getElementById('attachmentList').innerHTML = '';
-            detailModal.show();
+        async function viewMessage(msgId) {
+            const bodyDiv = document.getElementById('mailBody');
+            const attachDiv = document.getElementById('attachmentsArea');
+            bodyDiv.innerHTML = "로딩 중...";
+            attachDiv.innerHTML = "";
+            modal.show();
 
             try {
                 const response = await fetch(`/message/${msgId}`);
                 const data = await response.json();
 
-                if (!response.ok) {
-                    throw new Error(data.error || '알 수 없는 오류가 발생했습니다.');
-                }
+                if (data.error) throw new Error(data.error);
 
-                // 첨부파일 렌더링
+                // 본문 표시 (HTML이 있으면 HTML, 없으면 Text)
+                bodyDiv.innerHTML = data.html || `<pre>${data.text}</pre>`;
+
+                // 첨부파일 버튼 생성
                 if (data.attachments && data.attachments.length > 0) {
-                    let attachHtml = '<h6 class="fw-bold mb-2">📎 첨부파일</h6><div class="d-flex flex-wrap gap-2">';
-                    data.attachments.forEach(att => {
-                        attachHtml += `
-                            <a href="/attachment/${msgId}/${att.id}/${encodeURIComponent(att.filename)}" 
-                               class="btn btn-outline-secondary btn-sm rounded-pill px-3">
-                               <i class="bi bi-download"></i> ${att.filename} (${(att.size / 1024).toFixed(1)} KB)
-                            </a>`;
+                    let html = "<h6>첨부파일:</h6>";
+                    data.attachments.forEach(file => {
+                        html += `<a href="/attachment/${msgId}/${file.id}/${file.filename}" class="btn btn-sm btn-outline-secondary me-2 mb-2">💾 ${file.filename} (${Math.round(file.size / 1024)}KB)</a>`;
                     });
-                    attachHtml += '</div>';
-                    document.getElementById('attachmentList').innerHTML = attachHtml;
+                    attachDiv.innerHTML = html;
                 }
-
-                // 본문 렌더링
-                if (data.html) {
-                    const iframe = document.createElement('iframe');
-                    iframe.style.width = '100%';
-                    iframe.style.height = '600px';
-                    iframe.style.border = 'none';
-                    document.getElementById('messageBody').innerHTML = '';
-                    document.getElementById('messageBody').appendChild(iframe);
-                    iframe.contentWindow.document.open();
-                    iframe.contentWindow.document.write(data.html);
-                    iframe.contentWindow.document.close();
-                } else {
-                    document.getElementById('messageBody').innerHTML = `<pre class="mb-0" style="white-space: pre-wrap;">${data.text || '내용이 없습니다.'}</pre>`;
-                }
-            } catch (error) {
-                document.getElementById('messageBody').innerHTML = `<p class="text-danger">오류 발생: ${error.message}</p>`;
+            } catch (err) {
+                bodyDiv.innerHTML = `<p class="text-danger">오류: ${err.message}</p>`;
             }
         }
     </script>
-
-    <style>
-        .transition-all {
-            transition: all 0.2s ease-in-out;
-        }
-
-        .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(13, 110, 253, 0.25);
-        }
-
-        .table-hover tbody tr:hover {
-            background-color: rgba(0, 0, 0, 0.02);
-        }
-
-        .rounded-4 {
-            border-radius: 1rem !important;
-        }
-
-        .btn-white {
-            background: white;
-        }
-
-        pre {
-            font-family: inherit;
-            font-size: 0.9rem;
-        }
-    </style>
 </body>
 
 </html>

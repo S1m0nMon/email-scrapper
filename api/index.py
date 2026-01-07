@@ -92,7 +92,8 @@ def login():
     
     authorization_url, state = flow.authorization_url(
         access_type='offline',
-        include_granted_scopes='true'
+        include_granted_scopes='true',
+        prompt='consent'  # 항상 refresh_token을 받기 위해 추가
     )
     session['state'] = state
     return redirect(authorization_url)
@@ -111,12 +112,16 @@ def callback():
     
     # Credentials를 JSON 직렬화 가능한 딕셔너리로 변환하여 세션에 저장
     creds = flow.credentials
+    
+    # 클라이언트 설정에서 필요한 정보 추출
+    web_config = client_config.get('web', {})
+    
     session['token'] = {
         'token': creds.token,
         'refresh_token': creds.refresh_token,
-        'token_uri': creds.token_uri,
-        'client_id': creds.client_id,
-        'client_secret': creds.client_secret,
+        'token_uri': web_config.get('token_uri'),
+        'client_id': web_config.get('client_id'),
+        'client_secret': web_config.get('client_secret'),
         'scopes': creds.scopes
     }
     
