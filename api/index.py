@@ -98,7 +98,20 @@ def get_attachments_metadata(payload):
 @app.route('/')
 def index():
     if 'token' in session:
-        return render_template('index.html', view='results')
+        try:
+            creds = get_credentials()
+            if not creds:
+                session.pop('token', None)
+                return redirect(url_for('intro'))
+            
+            keyword = session.get('keyword', '승인')
+            days = int(session.get('days', '90'))
+            results = scrape_now(creds, keyword, days)
+            return render_template('index.html', view='results', data=results, status='success')
+        except Exception as e:
+            print(f"Error in index route: {e}")
+            session.pop('token', None)
+            return redirect(url_for('intro'))
     return redirect(url_for('intro'))
 
 @app.route('/intro')
