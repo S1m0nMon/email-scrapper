@@ -17,11 +17,21 @@ app.config['JSON_AS_ASCII'] = False
 SCOPES = ['https://www.googleapis.com/auth/gmail.readonly']
 
 def get_google_config():
-    """환경 변수에서 구글 설정 JSON을 읽어옵니다."""
+    """환경 변수 또는 파일에서 구글 설정 JSON을 읽어옵니다."""
     raw_config = os.environ.get("GOOGLE_CREDENTIALS")
-    if not raw_config:
-        return None
-    return json.loads(raw_config)
+    if raw_config:
+        try:
+            return json.loads(raw_config)
+        except json.JSONDecodeError:
+            pass
+            
+    # 로컬 개발을 위한 파일 폴백 (api/client_secret.json)
+    config_path = os.path.join(os.path.dirname(__file__), 'client_secret.json')
+    if os.path.exists(config_path):
+        with open(config_path, 'r', encoding='utf-8') as f:
+            return json.load(f)
+            
+    return None
 
 from google.auth.transport.requests import Request
 
@@ -87,7 +97,13 @@ def get_attachments_metadata(payload):
 
 @app.route('/')
 def index():
-    return render_template('index.html')
+    if 'token' in session:
+        return render_template('index.html', view='results')
+    return redirect(url_for('intro'))
+
+@app.route('/intro')
+def intro():
+    return render_template('index.html', view='intro')
 
 @app.route('/login')
 def login():
@@ -95,16 +111,23 @@ def login():
     if not client_config:
         return "에러: GOOGLE_CREDENTIALS 환경 변수가 설정되지 않았습니다.", 500
 
+    # 파라미터가 없으면 기본값 사용
     session['keyword'] = request.args.get('keyword', '승인')
     session['days'] = request.args.get('days', '90')
 
     flow = Flow.from_client_config(client_config, scopes=SCOPES)
-    flow.redirect_uri = url_for('callback', _external=True, _scheme='https')
+    
+    # 로컬 개발 환경(localhost)인 경우 http 허용
+    if request.host.startswith('localhost') or request.host.startswith('127.0.0.1'):
+        os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
+        flow.redirect_uri = url_for('callback', _external=True)
+    else:
+        flow.redirect_uri = url_for('callback', _external=True, _scheme='https')
     
     authorization_url, state = flow.authorization_url(
         access_type='offline',
         include_granted_scopes='true',
-        prompt='consent'  # 항상 refresh_token을 받기 위해 추가
+        prompt='consent'
     )
     session['state'] = state
     return redirect(authorization_url)
@@ -117,7 +140,11 @@ def callback():
     
     client_config = get_google_config()
     flow = Flow.from_client_config(client_config, scopes=SCOPES, state=state)
-    flow.redirect_uri = url_for('callback', _external=True, _scheme='https')
+    
+    if request.host.startswith('localhost') or request.host.startswith('127.0.0.1'):
+        flow.redirect_uri = url_for('callback', _external=True)
+    else:
+        flow.redirect_uri = url_for('callback', _external=True, _scheme='https')
     
     flow.fetch_token(authorization_response=request.url)
     
